@@ -56,8 +56,17 @@ if (process.env.NODE_ENV === "production") {
     app.use(express.static(clientBuildPath, { maxAge: "7d" }));
 
     // All other requests should return the React app's index.html (SPA fallback)
-    app.get("/*", (req, res) => {
-      res.sendFile(clientIndexPath);
+    app.get("/*", (req, res, next) => {
+      res.sendFile(clientIndexPath, (err) => {
+        if (err) {
+          console.error(
+            `Failed to send frontend index.html: ${err.message}`
+          );
+          if (!res.headersSent) {
+            res.status(404).json({ message: "Frontend build not found" });
+          }
+        }
+      });
     });
   } else {
     console.warn(
