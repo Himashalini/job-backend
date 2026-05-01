@@ -1,6 +1,7 @@
 import express from "express";
 import cors from "cors";
 import path from "path";
+import fs from "fs";
 import compression from "compression";
 
 import jobRoutes from "./routes/job.routes.js";
@@ -48,14 +49,21 @@ app.use(
 // Serve frontend build in production (single-server deployment)
 if (process.env.NODE_ENV === "production") {
   const clientBuildPath = path.join(process.cwd(), "frontend", "build");
+  const clientIndexPath = path.join(clientBuildPath, "index.html");
 
-  // Serve static files from the React app
-  app.use(express.static(clientBuildPath, { maxAge: "7d" }));
+  if (fs.existsSync(clientIndexPath)) {
+    // Serve static files from the React app
+    app.use(express.static(clientBuildPath, { maxAge: "7d" }));
 
-  // All other requests should return the React app's index.html (SPA fallback)
-  app.get("/*", (req, res) => {
-    res.sendFile(path.join(clientBuildPath, "index.html"));
-  });
+    // All other requests should return the React app's index.html (SPA fallback)
+    app.get("/*", (req, res) => {
+      res.sendFile(clientIndexPath);
+    });
+  } else {
+    console.warn(
+      `Frontend build not found at ${clientIndexPath}. Skipping SPA static serving.`
+    );
+  }
 }
 
 export default app;
