@@ -12,6 +12,7 @@ import authRoutes from "./routes/auth.routes.js";
 import bookRoutes from "./routes/book.routes.js";
 
 import govtJobRoutes from "./routes/govtJob.routes.js";
+import healthRoutes from "./routes/health.routes.js";
 
 const app = express();
 
@@ -31,7 +32,7 @@ app.use("/api/auth", authRoutes);
 app.use("/api/books", bookRoutes);
 
 app.use("/api/govt-jobs", govtJobRoutes);
-
+app.use("/health", healthRoutes);
 
 /* Health Check */
 app.get("/", (req, res) => {
