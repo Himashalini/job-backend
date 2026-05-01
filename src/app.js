@@ -49,10 +49,18 @@ app.use(
 
 // Serve frontend build in production (single-server deployment)
 if (process.env.NODE_ENV === "production") {
-  const clientBuildPath = path.join(process.cwd(), "frontend", "build");
-  const clientIndexPath = path.join(clientBuildPath, "index.html");
+  const buildCandidates = [
+    path.join(process.cwd(), "frontend", "build"),
+    path.join(process.cwd(), "frontend"),
+  ];
 
-  if (fs.existsSync(clientIndexPath)) {
+  const clientBuildPath = buildCandidates.find((candidate) =>
+    fs.existsSync(path.join(candidate, "index.html"))
+  );
+
+  if (clientBuildPath) {
+    const clientIndexPath = path.join(clientBuildPath, "index.html");
+
     // Serve static files from the React app
     app.use(express.static(clientBuildPath, { maxAge: "7d" }));
 
@@ -60,9 +68,7 @@ if (process.env.NODE_ENV === "production") {
     app.get("/*", (req, res, next) => {
       res.sendFile(clientIndexPath, (err) => {
         if (err) {
-          console.error(
-            `Failed to send frontend index.html: ${err.message}`
-          );
+          console.error(`Failed to send frontend index.html: ${err.message}`);
           if (!res.headersSent) {
             res.status(404).json({ message: "Frontend build not found" });
           }
@@ -71,7 +77,7 @@ if (process.env.NODE_ENV === "production") {
     });
   } else {
     console.warn(
-      `Frontend build not found at ${clientIndexPath}. Skipping SPA static serving.`
+      `Frontend build not found in backend/frontend or backend/frontend/build. Skipping SPA static serving.`
     );
   }
 }
