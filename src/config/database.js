@@ -1,3 +1,4 @@
+import fs from "fs";
 import mysql from "mysql2/promise";
 import dotenv from "dotenv";
 
@@ -5,10 +6,20 @@ dotenv.config();
 
 const port = process.env.DB_PORT ? Number(process.env.DB_PORT) : 3306;
 
-const ssl =
-  process.env.DB_SSL === "true" || process.env.DB_SSL === "1"
-    ? { rejectUnauthorized: true }
-    : undefined;
+const sslCaEnv = process.env.DB_SSL_CA;
+let ssl;
+
+if (sslCaEnv) {
+  const ca = sslCaEnv.startsWith("-----BEGIN CERTIFICATE-----")
+    ? sslCaEnv
+    : fs.existsSync(sslCaEnv)
+    ? fs.readFileSync(sslCaEnv, "utf8")
+    : sslCaEnv;
+
+  ssl = { ca, rejectUnauthorized: true };
+} else if (process.env.DB_SSL === "true" || process.env.DB_SSL === "1") {
+  ssl = { rejectUnauthorized: false };
+}
 
 export const db = mysql.createPool({
   host: process.env.DB_HOST,
