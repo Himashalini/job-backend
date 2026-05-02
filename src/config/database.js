@@ -8,6 +8,11 @@ const port = process.env.DB_PORT ? Number(process.env.DB_PORT) : 3306;
 
 const sslCaEnv = process.env.DB_SSL_CA;
 let ssl;
+const sslEnabled =
+  process.env.DB_SSL === "true" || process.env.DB_SSL === "1";
+const rejectUnauthorized =
+  process.env.DB_SSL_REJECT_UNAUTHORIZED !== "false" &&
+  process.env.DB_SSL_REJECT_UNAUTHORIZED !== "0";
 
 if (sslCaEnv) {
   const ca = sslCaEnv.includes("-----BEGIN CERTIFICATE-----")
@@ -18,17 +23,18 @@ if (sslCaEnv) {
 
   ssl = {
     ca: [ca],
-    rejectUnauthorized: true,
+    rejectUnauthorized,
     minVersion: "TLSv1.2",
   };
-} else if (process.env.DB_SSL === "true" || process.env.DB_SSL === "1") {
-  ssl = { rejectUnauthorized: false, minVersion: "TLSv1.2" };
+} else if (sslEnabled) {
+  ssl = { rejectUnauthorized, minVersion: "TLSv1.2" };
 }
 
 if (
   process.env.NODE_ENV === "production" &&
-  (process.env.DB_SSL === "true" || process.env.DB_SSL === "1") &&
-  !sslCaEnv
+  sslEnabled &&
+  !sslCaEnv &&
+  rejectUnauthorized
 ) {
   throw new Error(
     "Production DB SSL requires DB_SSL_CA with Aiven MySQL CA certificate."
