@@ -10,15 +10,29 @@ const sslCaEnv = process.env.DB_SSL_CA;
 let ssl;
 
 if (sslCaEnv) {
-  const ca = sslCaEnv.startsWith("-----BEGIN CERTIFICATE-----")
+  const ca = sslCaEnv.includes("-----BEGIN CERTIFICATE-----")
     ? sslCaEnv
     : fs.existsSync(sslCaEnv)
     ? fs.readFileSync(sslCaEnv, "utf8")
     : sslCaEnv;
 
-  ssl = { ca, rejectUnauthorized: true };
+  ssl = {
+    ca: [ca],
+    rejectUnauthorized: true,
+    minVersion: "TLSv1.2",
+  };
 } else if (process.env.DB_SSL === "true" || process.env.DB_SSL === "1") {
-  ssl = { rejectUnauthorized: false };
+  ssl = { rejectUnauthorized: false, minVersion: "TLSv1.2" };
+}
+
+if (
+  process.env.NODE_ENV === "production" &&
+  (process.env.DB_SSL === "true" || process.env.DB_SSL === "1") &&
+  !sslCaEnv
+) {
+  throw new Error(
+    "Production DB SSL requires DB_SSL_CA with Aiven MySQL CA certificate."
+  );
 }
 
 export const db = mysql.createPool({
